@@ -33,7 +33,11 @@ def get_latest_bulk_data(thread_lock):
 
 
 def get_images_for_requested_card(card_name):
-    deck_name = deck_name_input.get()
+
+    deck_name = "My Deck"
+
+    if deck_name_input.index("end") != 0:
+        deck_name = deck_name_input.get()
 
     data = {}
 
@@ -116,14 +120,15 @@ Label(root, text="Enter your cards here:").pack()
 input_txt = Text(root, height=15, width=40)
 input_txt.pack()
 
-Label(root, text="Deck Name:").pack()
+Label(root, text="Deck Name:").pack(pady=5)
 deck_name_input = Entry(root, width=50)
-deck_name_input.pack()
+deck_name_input.pack( padx=(0, 10))
+Button(root, text="Submit cards", command=start_card_submit).pack(pady=8)
 Button(root, text="Update card data", command=start_get_card_data).pack()
-Button(root, text="Submit cards", command=start_card_submit).pack()
-Label(root, text="Status:").pack(side=LEFT)
-status_lbl = Label(root, height=15, width=50)
-status_lbl.pack(side=RIGHT)
+
+Label(root, text="Status:").pack(side=LEFT, padx=(5,0))
+status_lbl = Label(root, height=15, width=40, bg="white")
+status_lbl.pack(pady=8, padx=(0, 20))
 
 # Execute Tkinter
 root.mainloop()
