@@ -109,6 +109,12 @@ pip-selfcheck.json
 # Pycharm IDE files
 .idea/*
 
+# Generated images
+images/*
+
+# JSON
+*.json
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
