@@ -4,6 +4,7 @@ import requests
 import json
 import re
 import threading
+from pathlib import Path
 
 
 def get_latest_images(image_url):
@@ -14,7 +15,8 @@ def get_latest_images(image_url):
         status_lbl.config(text="Writing new image data to json file...")
         with open(file_name, 'w', encoding="utf-8") as file:
             json.dump(response, file, ensure_ascii=False, indent=4)
-            status_lbl.config(text="Data written to JSON file successfully.")
+        status_lbl.config(text="Data written to JSON file successfully.")
+        update_data_button.config(fg="black")
 
 
 def get_latest_bulk_data(thread_lock):
@@ -33,7 +35,6 @@ def get_latest_bulk_data(thread_lock):
 
 
 def get_images_for_requested_card(card_name):
-
     deck_name = "My Deck"
 
     if deck_name_input.index("end") != 0:
@@ -73,11 +74,14 @@ def get_images_for_requested_card(card_name):
                     if "Basic Land" in card['type_line'] and card['type_line'] not in land_types:
                         land_types.append(card['type_line'])
 
+                else:
+                    status_lbl.config(text="Unable to retrieve " + card_name + ".")
+
 
 def submit_cards(thread_lock):
     thread_lock.acquire()
 
-    status_lbl.config(text="Reading in card list...")
+    status_lbl.config(text="Reading in card list...", fg="black")
     inp = input_txt.get(1.0, "end")
 
     # Strip parentheses and descriptors from the string
@@ -98,16 +102,38 @@ def submit_cards(thread_lock):
         if card != '':
             get_images_for_requested_card(card)
 
-    status_lbl.config(text="Finished!")
     thread_lock.release()
 
 
-def start_card_submit():
-    submit_cards_thread.start()
+def start_card_submit(thread):
+    if json_file_exists():
+        if input_txt.compare("end-1c", "==", "1.0"):
+            status_lbl.config(text="Please enter a card list and try again.", fg="red")
+        else:
+            try:
+                thread.start()
+            except RuntimeError:
+                thread = threading.Thread(target=submit_cards, args=(lock,))
+                thread.start()
+    else:
+        set_json_missing_config()
 
 
 def start_get_card_data():
     get_card_data_thread.start()
+
+
+def json_file_exists():
+    data_file = Path(os.getcwd() + "/" + file_name)
+
+    if data_file.exists():
+        return True
+    return False
+
+
+def set_json_missing_config():
+    status_lbl.config(text="No JSON file detected. Click 'Update card data' before submitting a deck.")
+    update_data_button.config(fg="red")
 
 
 # Set up multithreading
@@ -116,8 +142,12 @@ lock = threading.Lock()
 submit_cards_thread = threading.Thread(target=submit_cards, args=(lock,))
 get_card_data_thread = threading.Thread(target=get_latest_bulk_data, args=(lock,))
 
+# Global file name
 file_name = "latest_card_data.json"
 
+'''
+******************** Create GUI ********************
+'''
 # create root window
 root = Tk()
 root.title("MTG Card Image Retriever")
@@ -132,13 +162,18 @@ input_txt.pack()
 
 Label(root, text="Deck Name:").pack(pady=5)
 deck_name_input = Entry(root, width=50)
-deck_name_input.pack( padx=(0, 10))
-Button(root, text="Submit cards", command=start_card_submit).pack(pady=8)
-Button(root, text="Update card data", command=start_get_card_data).pack()
+deck_name_input.pack(padx=(0, 10))
+Button(root, text="Submit cards", command= lambda : start_card_submit(submit_cards_thread)).pack(pady=8)
+update_data_button = Button(root, text="Update card data", command=start_get_card_data)
+update_data_button.pack()
 
-Label(root, text="Status:").pack(side=LEFT, padx=(5,0))
-status_lbl = Label(root, height=15, width=40, bg="white")
+Label(root, text="Status:").pack(side=LEFT, padx=(5, 0))
+status_lbl = Label(root, height=15, width=40, bg="white", wraplength=200)
 status_lbl.pack(pady=8, padx=(0, 20))
+
+# Check if JSON data is present. Alert user if not.
+if not json_file_exists():
+    set_json_missing_config()
 
 # Execute Tkinter
 root.mainloop()
