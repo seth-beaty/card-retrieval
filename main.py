@@ -48,20 +48,30 @@ def get_images_for_requested_card(card_name):
 
     status_lbl.config(text="Retrieved card data...")
 
+    # List to hold basic land types to check against
+    # to make sure we retrieve basic lands only once
+    land_types = []
+
     for card in data:
         if card['name'] == card_name:
-            image_uri = card['image_uris']['normal']
-            res = requests.get(image_uri)
-            status_lbl.config(text="Attempting to retrieve " + card_name + "image...")
-            if res.status_code == 200:
-                status_lbl.config(text="Got image for " + card_name + ", writing to file")
-                if not os.path.exists(full_directory_path):
-                    os.makedirs(full_directory_path)
-                with open(os.getcwd() + "/images/" + deck_name + "/" + card_name + ".jpg", 'wb') as file:
-                    file.write(requests.get(image_uri).content)
+            get_card = True
 
-            else:
-                status_lbl.config(text="Image retrieval failed for " + card_name)
+            if "Basic Land" in card['type_line'] and card['type_line'] in land_types:
+                get_card = False
+
+            if get_card:
+                image_uri = card['image_uris']['normal']
+                res = requests.get(image_uri)
+                status_lbl.config(text="Attempting to retrieve " + card_name + "image...")
+                if res.status_code == 200:
+                    status_lbl.config(text="Got image for " + card_name + ", writing to file")
+                    if not os.path.exists(full_directory_path):
+                        os.makedirs(full_directory_path)
+                    with open(os.getcwd() + "/images/" + deck_name + "/" + card_name + ".jpg", 'wb') as file:
+                        file.write(requests.get(image_uri).content)
+
+                    if "Basic Land" in card['type_line'] and card['type_line'] not in land_types:
+                        land_types.append(card['type_line'])
 
 
 def submit_cards(thread_lock):
